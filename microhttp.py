@@ -3,7 +3,7 @@ import _thread
 import json
 
 '''
-@auth zhangchang
+@author zhangchang
 '''
 
 
