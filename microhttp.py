@@ -1,14 +1,28 @@
 import socket
 import _thread
 import json
+
 '''
 @auth zhangchang
 '''
+
+
+class HttpCode(object):
+    OK = (200, 'OK')
+    Bad_Request = (400, 'Bad Request')
+    Unauthorized = (401, 'Unauthorized')
+    Forbidden = (403, 'Forbidden')
+    Not_Found = (404, 'Not Found')
+    Method_Not_Allowed = (405, 'Method Not Allowed')
+    Request_Timeout = (408, 'Request Timeout')
+    Internal_Server_Error = (500, 'Internal Server Error')
+
 
 class Request(object):
     '''
     an object to receive a http request
     '''
+
     def __init__(self):
         self.method = "GET"
         self.uri = ""
@@ -28,7 +42,9 @@ class Response(object):
     '''
     an object to send a http response
     '''
-    def __init__(self, http_code=200, content_type='application/json', connection='close', message='OK', version=''):
+
+    def __init__(self, http_code=HttpCode.OK[0], content_type='application/json', connection='close',
+                 message=HttpCode.OK[1], version=''):
         self.http_code = http_code
         self.content_type = content_type
         self.connection = connection
@@ -43,10 +59,11 @@ class WebServer(object):
     Note:
         1.no session for this server
         2.no keep-alive for this server
-        3.the supported methods: [GET,POST,PUT,DELETE]
+        3.supported methods: [GET,POST,PUT,DELETE]
         4.can not upload files for this server
     '''
-    def __init__(self,context_path = '',max_connections=100,read_size=4096):
+
+    def __init__(self, context_path='', max_connections=100, read_size=4096):
         self.route_map = dict()
         self.read_size = read_size
         self.max_connections = max_connections
@@ -54,7 +71,7 @@ class WebServer(object):
 
     def route(self, url, method='GET'):
         def decorate(fun):
-            self.route_map[self.context_path+url] = (method, fun)
+            self.route_map[self.context_path + url] = (method, fun)
             return fun
 
         return decorate
@@ -87,25 +104,33 @@ class WebServer(object):
     def __run(self, host='0.0.0.0', port=80):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print('web started on http://{}:{}'.format(host,port))
+        print('web started on http://{}:{}'.format(host, port))
         s.bind((host, port))
         s.listen(self.max_connections)
         while True:
             conn, addr = s.accept()
-            self.handle_client(conn, addr)
+            try:
+                self.handle_client(conn, addr)
+            except Exception as e:
+                print(e)
+                if conn is not None:
+                    conn.close()
 
     def handle_client(self, conn, addr):
         rec_data = conn.recv(self.read_size)
         rec_str = str(rec_data, 'utf-8')
         request = self.parse_received(rec_str)
         if request.uri not in self.route_map.keys():
-            self.response(conn, Response(http_code=404, message='Not Found', version=request.version))
+            self.response(conn, Response(http_code=HttpCode.Not_Found[0], message=HttpCode.Not_Found[1],
+                                         version=request.version))
             return
         method, function = self.route_map[request.uri]
         if method != request.method:
-            self.response(conn, Response(http_code=405, message='Not Allowed', version=request.version))
+            self.response(conn,
+                          Response(http_code=HttpCode.Method_Not_Allowed[0], message=HttpCode.Method_Not_Allowed[1],
+                                   version=request.version))
             return
-        response = Response(http_code=200, version=request.version)
+        response = Response(http_code=HttpCode.OK[0], message=HttpCode.OK[1], version=request.version)
         response_body = function(request, response)
         if response_body is not None:
             response.body = response_body
