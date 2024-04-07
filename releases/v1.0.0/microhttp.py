@@ -187,13 +187,13 @@ class WebServer(object):
 
     def response(self, conn: socket, response: Response):
         conn.send(
-            bytes('{} {} {}\r\n'.format(response.version, response.http_code, response.message), encoding='utf-8'))
-        conn.send(bytes('Content-Type: {}\r\n'.format(response.content_type), encoding='utf-8'))
-        conn.send(bytes('Connection: {}\r\n\r\n'.format(response.connection), encoding='utf-8'))
+            bytes('{} {} {}\r\n'.format(response.version, response.http_code, response.message),'utf-8'))
+        conn.send(bytes('Content-Type: {}\r\n'.format(response.content_type),'utf-8'))
+        conn.send(bytes('Connection: {}\r\n\r\n'.format(response.connection),'utf-8'))
         if 'application/json' in response.content_type:
-            conn.sendall(bytes(json.dumps(response.body), encoding='utf-8'))
+            conn.sendall(bytes(json.dumps(response.body),'utf-8'))
         elif 'text/html' in response.content_type:
-            conn.sendall(bytes(response.body, encoding='utf-8'))
+            conn.sendall(bytes(response.body,'utf-8'))
         else:
-            conn.sendall(bytes(response.body, encoding='utf-8'))
+            conn.sendall(bytes(response.body,'utf-8'))
         conn.close()
