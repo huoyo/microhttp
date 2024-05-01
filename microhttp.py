@@ -146,7 +146,10 @@ class WebServer(object):
         headers = dict()
         for i, line in enumerate(text_split):
             if i == 0:
-                method, route_param_str, http_version = line.split(" ")
+                line_split = line.split(" ")
+                if len(line_split) < 3:
+                    continue
+                method, route_param_str, http_version = line_split[0], line_split[1], line_split[2]
 
             if line == '' and header_end == 0:
                 header_end = i
@@ -186,14 +189,17 @@ class WebServer(object):
         return route, param_dict
 
     def response(self, conn: socket, response: Response):
-        conn.send(
-            bytes('{} {} {}\r\n'.format(response.version, response.http_code, response.message),'utf-8'))
-        conn.send(bytes('Content-Type: {}\r\n'.format(response.content_type),'utf-8'))
-        conn.send(bytes('Connection: {}\r\n\r\n'.format(response.connection),'utf-8'))
-        if 'application/json' in response.content_type:
-            conn.sendall(bytes(json.dumps(response.body),'utf-8'))
-        elif 'text/html' in response.content_type:
-            conn.sendall(bytes(response.body,'utf-8'))
-        else:
-            conn.sendall(bytes(response.body,'utf-8'))
-        conn.close()
+        try:
+            conn.send(
+                bytes('{} {} {}\r\n'.format(response.version, response.http_code, response.message),'utf-8'))
+            conn.send(bytes('Content-Type: {}\r\n'.format(response.content_type),'utf-8'))
+            conn.send(bytes('Connection: {}\r\n\r\n'.format(response.connection),'utf-8'))
+            if 'application/json' in response.content_type:
+                conn.sendall(bytes(json.dumps(response.body),'utf-8'))
+            elif 'text/html' in response.content_type:
+                conn.sendall(bytes(response.body,'utf-8'))
+            else:
+                conn.sendall(bytes(response.body,'utf-8'))
+            conn.close()
+        except Exception as e:
+            print(e)
